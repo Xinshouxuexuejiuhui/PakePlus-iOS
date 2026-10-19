@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>能耗计算器 - 大鹏制作</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}
+body{padding:14px;background:#f0f2f5;font-size:14px;color:#333;}
+/*头部卡片美化，柔和阴影圆角 */
+.header{
+    width:100%;
+    margin:0 auto 20px;
+    padding:30px 20px;
+    border-radius:20px;
+    background: linear-gradient(135deg,#2b3a55 0%,#415a77 100%);
+    box-shadow:0 8px 24px rgba(43, 58, 85, 0.22);
+    color:#fff;
+    text-align:center;
+}
+.header h1{
+    font-size:clamp(24px,6vw,34px);
+    font-weight:700;
+    margin:0 0 8px 0;
+    letter-spacing:1px;
+}
+.header p{
+    font-size:clamp(15px,3.5vw,20px);
+    opacity:0.9;
+}
+/*模式切换按钮美化 */
+.mode-row{margin-bottom:18px;text-align:center;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.mode-row button{
+    padding:14px 18px;
+    border:none;
+    border-radius:14px;
+    color:#fff;
+    cursor:pointer;
+    font-size:16px;
+    font-weight:600;
+    box-shadow:0 4px 12px rgba(0,0,0,0.12);
+    transition:all 0.2s ease;
+}
+.mode-row button:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,0.16);}
+.mode-row button:active{transform:scale(0.96);}
+.STYLE3 {background:#2563eb;}
+.STYLE4 {background:#16a34a;}
+.STYLE5 {background:#9333ea;}
+
+.car-select-row{margin-bottom:16px;}
+.car-select-row label{
+    font-weight:bold;
+    display:block;
+    margin-bottom:8px;
+    font-size:17px;
+    color:#1f2937;
+}
+/*美化提示文字：注：只输入红色部分内容即可 */
+.tip-inline{
+    font-size:15px;
+    color:#b45309;
+    background-color:#fffbeb;
+    padding:3px 8px;
+    border-radius:6px;
+    margin-left:12px;
+    font-weight:500;
+}
+/* 车辆选择行：同一行，不换行，空间不足横向滚动 */
+.car-select-row .select-line{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:nowrap !important;
+    overflow-x:auto;
+    padding-bottom:6px;
+}
+.car-select-row select{
+    width:auto;
+    padding:11px 12px;
+    font-size:16px;
+    border:1px solid #d1d5db;
+    border-radius:10px;
+    background:#fff;
+    box-shadow:0 2px 6px rgba(0,0,0,0.06);
+    flex-shrink:0;
+    transition:border-color 0.2s;
+}
+.car-select-row select:focus{outline:none;border-color:#2563eb;}
+.car-select-row .inline-btn{
+    display:flex;
+    gap:8px;
+    flex-wrap:nowrap !important;
+    flex-shrink:0;
+}
+/*缩小 删除当前车辆、清空当前车辆记录按钮，美化hover */
+.btn-del-car{
+    background:#4b5563;
+    padding:9px 12px;
+    font-size:13px;
+    border-radius:8px;
+    border:none;color:#fff;cursor:pointer;transition:0.2s;
+}
+.btn-del-car:hover{background:#374151;}
+.btn-clear{
+    background:#fbbf24;
+    color:#1f2937;
+    padding:9px 12px;
+    font-size:13px;
+    border-radius:8px;
+    border:none;cursor:pointer;transition:0.2s;
+}
+.btn-clear:hover{background:#f59e0b;}
+
+/* =====油车布局样式 ===== */
+.fuel-input-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:12px;}
+/*缩小结果格子，元/公里、升/公里、升/百公里 */
+.fuel-result-row{display:grid;grid-template-columns:0.72fr 0.72fr 0.72fr;gap:8px;margin-bottom:18px;}
+/* =====电车布局样式 ===== */
+.ev-input-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:12px;}
+.ev-result-row{display:grid;grid-template-columns:0.72fr 0.72fr 0.72fr;gap:8px;margin-bottom:18px;}
+/* =====插混布局样式 ===== */
+.phev-line1,.phev-line2{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:12px;}
+.phev-line3{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.phev-result-row{display:grid;grid-template-columns:0.72fr 0.72fr 0.72fr 0.72fr 0.72fr 0.72fr;gap:8px;margin-bottom:18px;}
+
+.input-cell{text-align:center;display:flex;flex-direction:column;}
+.input-cell label{
+    display:block;
+    background:#dc2626;
+    color:#fff;
+    padding:9px 4px;
+    font-weight:bold;
+    border-radius:10px;
+    text-align:center;
+    min-height:56px;
+    line-height:1.3;
+    box-shadow:0 3px 8px rgba(220, 38, 38,0.15);
+    font-size:13px;
+}
+.input-cell.label-green label{
+    background:#16a34a !important;
+}
+.input-cell input{
+    width:100%;
+    padding:12px 10px;
+    font-size:16px;
+    border:1px solid #d1d5db;
+    border-radius:10px;
+    margin-top:8px;
+    background:#fff;
+    transition:border-color 0.2s;
+}
+.input-cell input:focus{outline:none;border-color:#2563eb;}
+input[readonly]{background:#f9fafb;}
+.res-cell{
+    text-align:center;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    padding:9px 6px;
+    color:#fff;
+    font-weight:bold;
+    font-size:12px;
+    border-radius:10px;
+    line-height:1.3;
+    box-shadow:0 4px 10px rgba(0,0,0,0.12);
+}
+.c1{background:#16a34a;}
+.c2{background:#facc15;color:#1f2937;}
+.c3{background:#2563eb;}
+.c4{background:#9333ea;}
+
+/*导出按钮：强制同一行，窄屏横向滚动，不换行 */
+.btn-group{
+    display:flex;
+    flex-wrap:nowrap !important;
+    gap:8px;
+    justify-content:flex-start;
+    overflow-x:auto;
+    padding-bottom:6px;
+    margin-bottom:16px;
+}
+.btn-group button{
+    padding:10px 12px;
+    font-size:13px;
+    border:none;
+    border-radius:10px;
+    color:#fff;
+    cursor:pointer;
+    box-shadow:0 3px 8px rgba(0,0,0,0.1);
+    transition:all 0.2s;
+    flex-shrink:0;
+}
+.btn-group button:hover{transform:translateY(-2px);}
+.btn-group button:active{transform:scale(0.96);}
+.btn-excel{background:#16a34a;}
+.btn-txt{background:#f97316;}
+.btn-json{background:#2563eb;}
+.btn-in{background:#9333ea;}
+
+.btn-save{background:#dc2626;transition: all 0.25s;}
+.save-row{display:flex;margin-bottom:16px;}
+.save-row .btn-save{
+    width:100%;
+    padding:20px 14px;
+    font-size:19px;
+    font-weight:bold;
+    border-radius:14px;
+    border:none;
+    color:#fff;
+    cursor:pointer;
+    box-shadow:0 4px 14px rgba(220, 38, 38,0.25);
+}
+.save-row .btn-save:hover{transform:translateY(-2px);}
+@keyframes shineFlash{
+  0%{box-shadow:0 0 6px #ef4444;}
+  50%{box-shadow:0 0 20px #ef4444,0 0 32px #f87171;}
+  100%{box-shadow:0 0 6px #ef4444;}
+}
+.btn-save.flash-active{
+  animation: shineFlash 0.8s infinite;
+}
+.total-bar{
+    background:#ffffff;
+    padding:16px;
+    text-align:center;
+    border-radius:12px;
+    margin-bottom:16px;
+    font-size:14px;
+    line-height:1.7;
+    box-shadow:0 2px 10px rgba(0,0,0,0.06);
+}
+table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:12px;
+    background:#fff;
+    border-radius:12px;
+    overflow:hidden;
+    box-shadow:0 2px 10px rgba(0,0,0,0.06);
+}
+th,td{border:1px solid #e5e7eb;padding:10px 4px;text-align:center;vertical-align:middle;}
+th{background:#f3f4f6;font-weight:bold;font-size:12px;}
+/* ==========车牌号牌样式，宽度跟随文字自动随动 ========== */
+.badge-car{
+    display:inline-block;
+    padding:4px 8px;
+    border-radius:6px;
+    font-weight:bold;
+    font-size:11px;
+    letter-spacing:1px;
+    white-space:nowrap;
+}
+.badge-car.fuel{
+    background:#1d4ed8;
+    color:#ffffff;
+    border:2px solid #fff;
+    box-shadow:0 1px 4px rgba(0,0,0,0.12);
+}
+.badge-car.newenergy{
+    background:#22c55e;
+    color:#000000;
+    border:2px solid #fff;
+    box-shadow:0 1px 4px rgba(0,0,0,0.12);
+}
+th.car-no-header,
+td:has(.badge-car) {
+    width: 110px;
+}
+th.car-no-header{
+    font-size:12px;
+}
+.del-btn{
+    background:#dc2626 !important;
+    color:#fff;
+    border:none;
+    padding:5px 8px;
+    font-size:11px;
+    border-radius:5px;
+    cursor:pointer;
+    transition:0.2s;
+}
+.del-btn:hover{background:#b91c1c !important;}
+.note{
+    margin-top:14px;
+    font-size:12px;
+    color:#4b5563;
+    line-height:1.6;
+    background:#ffffff;
+    padding:16px;
+    border-radius:12px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.04);
+}
+.hide{display:none !important;}
+/*弹窗样式 */
+.modal-mask{
+    position:fixed;
+    top:0;left:0;right:0;bottom:0;
+    background:rgba(0,0,0,0.6);
+    z-index:999;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+}
+.modal-box{
+    background:#fff;
+    padding:26px;
+    border-radius:16px;
+    width:100%;
+    max-width:360px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.2);
+}
+.modal-box h4{margin-bottom:16px;font-size:18px;color:#1f2937;}
+.modal-box input{
+    width:100%;
+    padding:14px;
+    font-size:16px;
+    border:1px solid #d1d5db;
+    border-radius:10px;
+    margin-bottom:20px;
+}
+.modal-box input:focus{outline:none;border-color:#2563eb;}
+.modal-btn-wrap{display:flex;gap:14px;}
+.modal-btn-wrap button{flex:1;padding:13px;font-size:16px;border-radius:10px;border:none;cursor:pointer;}
+.del-btn1 {background:#dc2626 !important;color:#fff;border:none;padding:6px 10px;font-size:13px;border-radius:6px;cursor:pointer;}
+.STYLE17 {background: #9333ea; font-size: 16px; }
+.STYLE26 {
+	background: #16a34a;
+	font-size: 18px;
+	font-family: Geneva, Arial, Helvetica, sans-serif;
+	font-weight: bold;
+}
+</style>
+</head>
+<body>
+<div class="modal-mask" id="addCarMask">
+    <div class="modal-box">
+        <h4>请输入新增车辆车牌号码</h4>
+        <input type="text" id="newCarInput" placeholder="输入车牌号码">
+        <div class="modal-btn-wrap">
+            <button style="background:#6b7280;color:#fff;" onClick="modalCancel()">取消</button>
+            <button style="background:#16a34a;color:#fff;" onClick="modalConfirm()">确定</button>
+        </div>
+    </div>
+</div>
+<div class="header">
+<h1>能耗计算器</h1>
+<p>大鹏制作</p>
+</div>
+<div class="mode-row">
+<button class="STYLE3" onClick="switchToFuel()">燃油<br>车</button>
+<button class="STYLE4" onClick="switchToEv()">新能源<br>电车</button>
+<button class="STYLE5" onClick="switchToPhev()">新能源插混车<br>增程车</button></div>
+<div class="car-select-row">
+<label>
+<p><span class="STYLE26">选择车辆</span>
+    <span class="tip-inline">💡 注：只输入红色部分内容即可。</span>
+  <br>
+</p>
+<div class="select-line">
+<select id="carSelect" onmousedown="this._oldIdx=this.selectedIndex;this.selectedIndex=-1;"></select>
+<div class="inline-btn">
+<button class="STYLE17" onClick="deleteCar()">删除当前车辆</button>
+<button class="STYLE17" onClick="clearCurrentCar()">清空本车记录</button>
+</div>
+</div>
+</label>
+<div id="fuelWrap" class="hide">
+    <div class="fuel-input-row">
+        <div class="input-cell">
+            <label>加油金额<br>(元)</label>
+            <input type="number" id="fuel_money" placeholder="输入金额" oninput="fuel_calc()">
+        </div>
+        <div class="input-cell">
+            <label>加油单价<br>(元/升)</label>
+            <input type="number" id="fuel_price" placeholder="单价" oninput="fuel_calc()">
+        </div>
+        <div class="input-cell">
+            <label>行驶里程<br>(公里)</label>
+            <input type="number" id="fuel_km" placeholder="本次里程" oninput="fuel_calc()">
+        </div>
+        <div class="input-cell label-green">
+            <label>加油量<br>(升)</label>
+            <input type="text" id="fuel_unitVal" readonly value="--">
+        </div>
+    </div>
+    <div class="fuel-result-row">
+        <div class="res-cell c1">元/公里<br><span id="fuel_costPerKm">--</span></div>
+        <div class="res-cell c2">升/公里<br><span id="fuel_perKm">--</span></div>
+        <div class="res-cell c3">升/百公里<br><span id="fuel_per100km">--</span></div>
+    </div>
+</div>
+<div id="evWrap" class="hide">
+    <div class="ev-input-row">
+        <div class="input-cell">
+            <label>充电金额<br>(元)</label>
+            <input type="number" id="ev_money" placeholder="输入金额" oninput="ev_calc()">
+        </div>
+        <div class="input-cell">
+            <label>充电单价<br>(元/度)</label>
+            <input type="number" id="ev_price" placeholder="单价" oninput="ev_calc()">
+        </div>
+        <div class="input-cell">
+            <label>行驶里程<br>(公里)</label>
+            <input type="number" id="ev_km" placeholder="本次里程" oninput="ev_calc()">
+        </div>
+        <div class="input-cell label-green">
+            <label>充电量<br>(度)</label>
+            <input type="text" id="ev_unitVal" readonly value="--">
+        </div>
+    </div>
+    <div class="ev-result-row">
+        <div class="res-cell c1">元/公里<br><span id="ev_costPerKm">--</span></div>
+        <div class="res-cell c2">度/公里<br><span id="ev_perKm">--</span></div>
+        <div class="res-cell c3">度/百公里<br><span id="ev_per100km">--</span></div>
+    </div>
+</div>
+<div id="phevWrap" class="hide">
+  <div class="phev-line1">
+    <div class="input-cell">
+            <label>加油金额<br>(元)</label>
+            <input type="number" id="phev_oilMoney" placeholder="油费" oninput="phev_calc()">
+    </div>
+        <div class="input-cell">
+            <label>加油单价<br>(元/升)</label>
+            <input type="number" id="phev_oilPrice" placeholder="油价" oninput="phev_calc()">
+    </div>
+        <div class="input-cell">
+            <label>油行驶里程<br>(公里)</label>
+            <input type="number" id="phev_oilKm" placeholder="用油跑里程" oninput="phev_calc()">
+    </div>
+        <div class="input-cell label-green">
+            <label>加油量<br>(升)</label>
+            <input type="text" id="phev_oilVol" readonly value="--">
+    </div>
+    </div>
+    <div class="phev-line2">
+      <div class="input-cell">
+            <label>充电金额<br>(元)</label>
+            <input type="number" id="phev_eleMoney" placeholder="电费" oninput="phev_calc()">
+      </div>
+        <div class="input-cell">
+            <label>充电单价<br>(元/度)</label>
+            <input type="number" id="phev_elePrice" placeholder="电价" oninput="phev_calc()">
+      </div>
+        <div class="input-cell">
+            <label>电行驶里程<br>(公里)</label>
+            <input type="number" id="phev_eleKm" placeholder="用电跑里程" oninput="phev_calc()">
+      </div>
+        <div class="input-cell label-green">
+            <label>充电量<br>(度)</label>
+            <input type="text" id="phev_eleVol" readonly value="--">
+      </div>
+    </div>
+    <div class="phev-line3">
+      <div class="input-cell label-green">
+            <label>油电总行驶里程<br>(公里)</label>
+            <input type="text" id="phev_totalKm" readonly placeholder="自动计算">
+      </div>
+        <div class="input-cell label-green">
+            <label>油电总金额<br>(元)</label>
+            <input type="text" id="phev_totalCost" readonly placeholder="自动计算">
+      </div>
+    </div>
+    <div class="phev-result-row">
+      <div class="res-cell c1">元/公里(油)<br><span id="phev_oilCostPerKm">--</span></div>
+        <div class="res-cell c2">元/公里(电)<br><span id="phev_eleCostPerKm">--</span></div>
+        <div class="res-cell c3">升/公里<br><span id="phev_oilPerKm">--</span></div>
+        <div class="res-cell c4">度/公里<br><span id="phev_elePerKm">--</span></div>
+        <div class="res-cell c1">升/百公里<br><span id="phev_oil100">--</span></div>
+        <div class="res-cell c2">度/百公里<br><span id="phev_ele100">--</span></div>
+    </div>
+</div>
+<!--保存按钮放到导出按钮栏上方 -->
+<div class="save-row">
+<button id="saveBtn" class="btn-save" onClick="saveRecord()">保存本条记录</button>
+</div>
+<div class="btn-group">
+<button class="btn-excel" onClick="exportExcel()">导出Excel</button>
+<button class="btn-txt" onClick="exportTxt()">导出TXT</button>
+<button class="btn-json" onClick="exportJson()">导出备份(json)</button>
+<button class="btn-in" onClick="importJson()">导入备份(json)</button>
+</div>
+
+<div class="total-bar">
+<span id="totalBarText"></span>
+</div>
+<h3 style="margin:12px 0 10px;font-size:17px;color:#1f2937;">记录汇总</h3>
+<div id="fuelTableWrap" class="hide">
+<table>
+<thead>
+<tr>
+<th class="car-no-header">车辆号码</th>
+<th>日期</th>
+<th>加油金额<br>(元)</th>
+<th>加油单价<br>(元)</th>
+<th>行驶里程<br>(公里)</th>
+<th>加油量<br>(升)</th>
+<th>元/公里</th>
+<th>升/公里</th>
+<th>升/百公里</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody id="fuelTableBody"></tbody>
+</table>
+</div>
+<div id="evTableWrap" class="hide">
+<table>
+<thead>
+<tr>
+<th class="car-no-header">车辆号码</th>
+<th>日期</th>
+<th>充电金额<br>(元)</th>
+<th>充电单价<br>(元)</th>
+<th>行驶里程<br>(公里)</th>
+<th>充电量<br>(度)</th>
+<th>元/公里</th>
+<th>度/公里</th>
+<th>度/百公里</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody id="evTableBody"></tbody>
+</table>
+</div>
+<div id="phevTableWrap" class="hide">
+<table>
+<thead>
+<tr>
+<th class="car-no-header">车辆号码</th>
+<th>日期</th>
+<th>油电总金额<br>(元)</th>
+<th>油电总行驶里程<br>(公里)</th>
+<th>加油金额<br>(元)</th>
+<th>加油单价<br>(元)</th>
+<th>油行驶里程<br>(公里)</th>
+<th>加油量<br>(升)</th>
+<th>充电金额<br>(元)</th>
+<th>充电单价<br>(元)</th>
+<th>电行驶里程<br>(公里)</th>
+<th>充电量<br>(度)</th>
+<th>元/公里(油)</th>
+<th>元/公里(电)</th>
+<th>升/公里</th>
+<th>度/公里</th>
+<th>升/百公里</th>
+<th>度/百公里</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody id="phevTableBody"></tbody>
+</table>
+</div>
+<div class="note">
+💡注：加满油、充满电记录数据更准确。本软件计算结果仅供参考，不做为车辆能耗判定依据！！！电脑手机独立记录，需使用json文件迁移数据。电脑端导出默认保存下载目录，手机端导出自动保存到Download文件夹。有不明之处或好的建议请联系作者。本软件仅限个人使用，请勿传播或商业用途，否则后果自负！
+</div>
+<script>
+const KEY_CAR_LIST = "oilCarList";
+const KEY_RECORDS = "oilRecords";
+function base_getCarList(){
+    let s=localStorage.getItem(KEY_CAR_LIST);
+    return s?JSON.parse(s):[];
+}
+function base_saveCarList(cars){
+    localStorage.setItem(KEY_CAR_LIST,JSON.stringify(cars));
+}
+function base_getRecords(){
+    let s=localStorage.getItem(KEY_RECORDS);
+    return s?JSON.parse(s):[];
+}
+function base_saveRecords(list){
+    localStorage.setItem(KEY_RECORDS,JSON.stringify(list));
+}
+function base_downloadFile(content,filename,type){
+    let blob=new Blob([content],{type:type});
+    let url=URL.createObjectURL(blob);
+    let a=document.createElement('a');
+    a.href=url;
+    a.download=filename;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+let tempAddCarMode = "";
+const maskDom = document.getElementById("addCarMask");
+const newCarInputDom = document.getElementById("newCarInput");
+function openAddCarModal(mode){
+    tempAddCarMode = mode;
+    newCarInputDom.value = "";
+    maskDom.style.display="flex";
+}
+function modalCancel(){
+    maskDom.style.display="none";
+    if(tempAddCarMode==="fuel") fuel_fillSelect();
+    if(tempAddCarMode==="ev") ev_fillSelect();
+    if(tempAddCarMode==="phev") phev_fillSelect();
+}
+function modalConfirm(){
+    let newCarName = newCarInputDom.value.trim();
+    maskDom.style.display="none";
+    if(!newCarName){
+        if(tempAddCarMode==="fuel") fuel_fillSelect();
+        if(tempAddCarMode==="ev") ev_fillSelect();
+        if(tempAddCarMode==="phev") phev_fillSelect();
+        return;
+    }
+    if(tempAddCarMode === "fuel") fuel_doAddCar(newCarName);
+    else if(tempAddCarMode === "ev") ev_doAddCar(newCarName);
+    else if(tempAddCarMode === "phev") phev_doAddCar(newCarName);
+}
+let fuel_lastSelectCar = "";
+let ev_lastSelectCar = "";
+let phev_lastSelectCar = "";
+let currentActiveMode = "fuel";
+const saveBtn = document.getElementById('saveBtn');
+const carSelectDom = document.getElementById('carSelect');
+function handleCarSelectChange(){
+    let v=carSelectDom.value;
+    if(currentActiveMode === "fuel"){
+        if(v==="__ADD__") openAddCarModal("fuel");
+        else { fuel_lastSelectCar = v; fuel_renderTableAndStat(); }
+    }else if(currentActiveMode === "ev"){
+        if(v==="__ADD__") openAddCarModal("ev");
+        else { ev_lastSelectCar = v; ev_renderTableAndStat(); }
+    }else if(currentActiveMode === "phev"){
+        if(v==="__ADD__") openAddCarModal("phev");
+        else { phev_lastSelectCar = v; phev_renderTableAndStat(); }
+    }
+}
+function fuel_calc(){
+    saveBtn.classList.remove('flash-active');
+    let money = Number(document.getElementById('fuel_money').value);
+    let price = Number(document.getElementById('fuel_price').value);
+    let km = Number(document.getElementById('fuel_km').value);
+    if(!money || !price || !km){
+        document.getElementById('fuel_unitVal').value="--";
+        document.getElementById('fuel_costPerKm').innerText="--";
+        document.getElementById('fuel_perKm').innerText="--";
+        document.getElementById('fuel_per100km').innerText="--";
+        return null;
+    }
+    let total = money / price;
+    let perKm = total / km;
+    let per100km = perKm * 100;
+    let costPerKm = money / km;
+    document.getElementById('fuel_unitVal').value = total.toFixed(2);
+    document.getElementById('fuel_costPerKm').innerText = costPerKm.toFixed(2);
+    document.getElementById('fuel_perKm').innerText = perKm.toFixed(4);
+    document.getElementById('fuel_per100km').innerText = per100km.toFixed(2);
+    saveBtn.classList.add('flash-active');
+    return {total,costPerKm,perKm,per100km,money,price,km};
+}
+function fuel_clearInput(){
+    document.getElementById('fuel_money').value="";
+    document.getElementById('fuel_price').value="";
+    document.getElementById('fuel_km').value="";
+    document.getElementById('fuel_unitVal').value="--";
+    document.getElementById('fuel_costPerKm').innerText="--";
+    document.getElementById('fuel_perKm').innerText="--";
+    document.getElementById('fuel_per100km').innerText="--";
+}
+function fuel_buildRow(listItem,listIndex){
+    let d=listItem.data;
+    let t=listItem.time.split(' ');
+    let datePart=t[0]||"";
+    let timePart=t[1]||"";
+    return `<tr>
+        <td><div class="badge-car fuel">${listItem.carNo}</div></td>
+        <td>${datePart}<br>${timePart}</td>
+        <td>${(d.money||0).toFixed(2)}</td>
+        <td>${(d.price||0).toFixed(2)}</td>
+        <td>${(d.km||0).toFixed(1)}</td>
+        <td>${(d.total||0).toFixed(2)}</td>
+        <td>${(d.costPerKm||0).toFixed(2)}</td>
+        <td>${(d.perKm||0).toFixed(4)}</td>
+        <td>${(d.per100km||0).toFixed(2)}</td>
+        <td><button class="del-btn" onclick="del(${listIndex})">删除</button></td>
+    </tr>`;
+}
+function fuel_fillSelect(){
+    carSelectDom.innerHTML="";
+    let addOpt=document.createElement('option');
+    addOpt.value="__ADD__";
+    addOpt.innerText="+ 新增车辆";
+    carSelectDom.appendChild(addOpt);
+    let cars=base_getCarList();
+    let filterCars = cars.filter(item=>item.type === "fuel");
+    filterCars.forEach(car=>{
+        let opt=document.createElement('option');
+        opt.value=car.name;
+        opt.innerText=car.name;
+        carSelectDom.appendChild(opt);
+    });
+    if(filterCars.some(x=>x.name === fuel_lastSelectCar)){
+        carSelectDom.value = fuel_lastSelectCar;
+    }else{
+        if(filterCars.length>0){
+            carSelectDom.value = filterCars[0].name;
+            fuel_lastSelectCar = filterCars[0].name;
+        }else{
+            carSelectDom.value = "__ADD__";
+            fuel_lastSelectCar = "";
+        }
+    }
+}
+function fuel_renderTableAndStat(){
+    let list=base_getRecords();
+    let selectedCar=carSelectDom.value;
+    let fuelTbody=document.getElementById('fuelTableBody');
+    fuelTbody.innerHTML="";
+    if(selectedCar==="__ADD__"){
+        document.getElementById("totalBarText").innerHTML = "汇总统计｜请选择车辆";
+        return;
+    }
+    let filterList=list.filter(i=>i.carNo===selectedCar && i.mode === "fuel");
+    let sumKm=0,sumOil=0,sumOilMoney=0;
+    filterList.forEach((v)=>{
+        let d = v.data;
+        sumKm += Number(d.km);
+        sumOil += Number(d.total);
+        sumOilMoney += Number(d.money);
+        fuelTbody.innerHTML += fuel_buildRow(v,list.indexOf(v));
+    });
+    let avgVal=sumKm>0?(sumOil/sumKm*100).toFixed(2):"0.00";
+    let avgPerKmVal=sumKm>0?(sumOil/sumKm).toFixed(4):"0.0000";
+    document.getElementById("totalBarText").innerHTML = `汇总统计：总里程：${sumKm.toFixed(1)} km｜总加油量：${sumOil.toFixed(2)} L<br>总金额：${sumOilMoney.toFixed(2)}元｜平均每公里：${(sumOilMoney/sumKm||0).toFixed(2)}元｜平均油耗：${avgVal} L/100km｜平均升/公里：${avgPerKmVal} L/km`;
+}
+function fuel_doAddCar(newCar){
+    let cars=base_getCarList();
+    const exist = cars.find(x=>x.name===newCar && x.type==="fuel");
+    if(exist){
+        alert("燃油车类型下此车辆已经存在");
+        fuel_lastSelectCar = newCar;
+        fuel_fillSelect();
+        fuel_renderTableAndStat();
+        return;
+    }
+    cars.push({name:newCar, type:"fuel"});
+    base_saveCarList(cars);
+    fuel_lastSelectCar = newCar;
+    fuel_fillSelect();
+    fuel_renderTableAndStat();
+}
+function fuel_saveRecord(){
+    let carNo=carSelectDom.value;
+    if(carNo==="__ADD__"){alert("请先下拉选择车辆，+新增车辆用来添加新车");return;}
+    let res = fuel_calc();
+    if(!res){alert("请填写燃油车对应数据");return;}
+    let item={carNo:carNo,mode:"fuel",time:new Date().toLocaleString(),data:res};
+    let list=base_getRecords();
+    list.unshift(item);
+    base_saveRecords(list);
+    fuel_lastSelectCar = carNo;
+    fuel_clearInput();
+    fuel_renderTableAndStat();
+    saveBtn.classList.remove('flash-active');
+}
+function fuel_clearCarRecords(){
+    let sel=carSelectDom.value;
+    if(sel==="__ADD__")return;
+    if(!confirm(`确定清空【${sel}】燃油车所有记录？不可恢复！`))return;
+    let list=base_getRecords().filter(i=>!(i.carNo===sel && i.mode==="fuel"));
+    base_saveRecords(list);
+    fuel_renderTableAndStat();
+}
+function fuel_deleteCar(){
+    let sel=carSelectDom.value;
+    if(sel==="__ADD__")return;
+    if(!confirm(`确定删除燃油车【${sel}】以及全部记录？`))return;
+    let cars=base_getCarList().filter(c=>!(c.name===sel && c.type==="fuel"));
+    base_saveCarList(cars);
+    let rec=base_getRecords().filter(r=>!(r.carNo===sel && r.mode==="fuel"));
+    base_saveRecords(rec);
+    fuel_lastSelectCar = "";
+    fuel_fillSelect();
+    fuel_renderTableAndStat();
+}
+function ev_calc(){
+    saveBtn.classList.remove('flash-active');
+    let money = Number(document.getElementById('ev_money').value);
+    let price = Number(document.getElementById('ev_price').value);
+    let km = Number(document.getElementById('ev_km').value);
+    if(!money || !price || !km){
+        document.getElementById('ev_unitVal').value="--";
+        document.getElementById('ev_costPerKm').innerText="--";
+        document.getElementById('ev_perKm').innerText="--";
+        document.getElementById('ev_per100km').innerText="--";
+        return null;
+    }
+    let total = money / price;
+    let perKm = total / km;
+    let per100km = perKm * 100;
+    let costPerKm = money / km;
+    document.getElementById('ev_unitVal').value = total.toFixed(2);
+    document.getElementById('ev_costPerKm').innerText = costPerKm.toFixed(2);
+    document.getElementById('ev_perKm').innerText = perKm.toFixed(4);
+    document.getElementById('ev_per100km').innerText = per100km.toFixed(2);
+    saveBtn.classList.add('flash-active');
+    return {total,costPerKm,perKm,per100km,money,price,km};
+}
+function ev_clearInput(){
+    document.getElementById('ev_money').value="";
+    document.getElementById('ev_price').value="";
+    document.getElementById('ev_km').value="";
+    document.getElementById('ev_unitVal').value="--";
+    document.getElementById('ev_costPerKm').innerText="--";
+    document.getElementById('ev_perKm').innerText="--";
+    document.getElementById('ev_per100km').innerText="--";
+}
+function ev_buildRow(listItem,listIndex){
+    let d=listItem.data;
+    let t=listItem.time.split(' ');
+    let datePart=t[0]||"";
+    let timePart=t[1]||"";
+    return `<tr>
+        <td><div class="badge-car newenergy">${listItem.carNo}</div></td>
+        <td>${datePart}<br>${timePart}</td>
+        <td>${(d.money||0).toFixed(2)}</td>
+        <td>${(d.price||0).toFixed(2)}</td>
+        <td>${(d.km||0).toFixed(1)}</td>
+        <td>${(d.total||0).toFixed(2)}</td>
+        <td>${(d.costPerKm||0).toFixed(2)}</td>
+        <td>${(d.perKm||0).toFixed(4)}</td>
+        <td>${(d.per100km||0).toFixed(2)}</td>
+        <td><button class="del-btn" onclick="del(${listIndex})">删除</button></td>
+    </tr>`;
+}
+function ev_fillSelect(){
+    carSelectDom.innerHTML="";
+    let addOpt=document.createElement('option');
+    addOpt.value="__ADD__";
+    addOpt.innerText="+ 新增车辆";
+    carSelectDom.appendChild(addOpt);
+    let cars=base_getCarList();
+    let filterCars = cars.filter(item=>item.type === "ev");
+    filterCars.forEach(car=>{
+        let opt=document.createElement('option');
+        opt.value=car.name;
+        opt.innerText=car.name;
+        carSelectDom.appendChild(opt);
+    });
+    if(filterCars.some(x=>x.name === ev_lastSelectCar)){
+        carSelectDom.value = ev_lastSelectCar;
+    }else{
+        if(filterCars.length>0){
+            carSelectDom.value = filterCars[0].name;
+            ev_lastSelectCar = filterCars[0].name;
+        }else{
+            carSelectDom.value = "__ADD__";
+            ev_lastSelectCar = "";
+        }
+    }
+}
+function ev_renderTableAndStat(){
+    let list=base_getRecords();
+    let selectedCar=carSelectDom.value;
+    let evTbody=document.getElementById('evTableBody');
+    evTbody.innerHTML="";
+    if(selectedCar==="__ADD__"){
+        document.getElementById("totalBarText").innerHTML = "汇总统计｜请选择车辆";
+        return;
+    }
+    let filterList=list.filter(i=>i.carNo===selectedCar && i.mode === "ev");
+    let sumKm=0,sumEle=0,sumEleMoney=0;
+    filterList.forEach((v)=>{
+        let d = v.data;
+        sumKm += Number(d.km);
+        sumEle += Number(d.total);
+        sumEleMoney += Number(d.money);
+        evTbody.innerHTML += ev_buildRow(v,list.indexOf(v));
+    });
+    let avgVal=sumKm>0?(sumEle/sumKm*100).toFixed(2):"0.00";
+    let avgPerKmVal=sumKm>0?(sumEle/sumKm).toFixed(4):"0.0000";
+    document.getElementById("totalBarText").innerHTML = `汇总统计：总里程：${sumKm.toFixed(1)} km｜总充电量：${sumEle.toFixed(2)} 度<br>总金额：${sumEleMoney.toFixed(2)}元｜平均每公里：${(sumEleMoney/sumKm||0).toFixed(2)}元｜平均电耗：${avgVal} 度/100km｜平均度/公里：${avgPerKmVal} 度/km`;
+}
+function ev_doAddCar(newCar){
+    let cars=base_getCarList();
+    const exist = cars.find(x=>x.name===newCar && x.type==="ev");
+    if(exist){
+        alert("电车类型下此车辆已经存在");
+        ev_lastSelectCar = newCar;
+        ev_fillSelect();
+        ev_renderTableAndStat();
+        return;
+    }
+    cars.push({name:newCar, type:"ev"});
+    base_saveCarList(cars);
+    ev_lastSelectCar = newCar;
+    ev_fillSelect();
+    ev_renderTableAndStat();
+}
+function ev_saveRecord(){
+    let carNo=carSelectDom.value;
+    if(carNo==="__ADD__"){alert("请先下拉选择车辆，+新增车辆用来添加新车");return;}
+    let res = ev_calc();
+    if(!res){alert("请填写电车对应数据");return;}
+    let item={carNo:carNo,mode:"ev",time:new Date().toLocaleString(),data:res};
+    let list=base_getRecords();
+    list.unshift(item);
+    base_saveRecords(list);
+    ev_lastSelectCar = carNo;
+    ev_clearInput();
+    ev_renderTableAndStat();
+    saveBtn.classList.remove('flash-active');
+}
+function ev_clearCarRecords(){
+    let sel=carSelectDom.value;
+    if(sel==="__ADD__")return;
+    if(!confirm(`确定清空【${sel}】电车所有记录？不可恢复！`))return;
+    let list=base_getRecords().filter(i=>!(i.carNo===sel && i.mode==="ev"));
+    base_saveRecords(list);
+    ev_renderTableAndStat();
+}
+function ev_deleteCar(){
+    let sel=carSelectDom.value;
+    if(sel==="__ADD__")return;
+    if(!confirm(`确定删除电车【${sel}】以及全部记录？`))return;
+    let cars=base_getCarList().filter(c=>!(c.name===sel && c.type==="ev"));
+    base_saveCarList(cars);
+    let rec=base_getRecords().filter(r=>!(r.carNo===sel && r.mode==="ev"));
+    base_saveRecords(rec);
+    ev_lastSelectCar = "";
+    ev_fillSelect();
+    ev_renderTableAndStat();
+}
+function phev_calc(){
+    saveBtn.classList.remove('flash-active');
+    let oilMoney=Number(document.getElementById('phev_oilMoney').value);
+    let oilPrice=Number(document.getElementById('phev_oilPrice').value);
+    let eleMoney=Number(document.getElementById('phev_eleMoney').value);
+    let elePrice=Number(document.getElementById('phev_elePrice').value);
+    let oilKm = Number(document.getElementById('phev_oilKm').value);
+    let eleKm = Number(document.getElementById('phev_eleKm').value);
+    let totalKmVal = oilKm + eleKm;
+    let oilVol = (oilMoney && oilPrice) ? oilMoney / oilPrice : 0;
+    let eleVol = (eleMoney && elePrice) ? eleMoney / elePrice : 0;
+    let totalCostVal = oilMoney + eleMoney;
+    document.getElementById('phev_totalKm').value = totalKmVal ? totalKmVal.toFixed(1) : "--";
+    document.getElementById('phev_totalCost').value = totalCostVal ? totalCostVal.toFixed(2) : "--";
+    document.getElementById('phev_oilVol').value = oilVol ? oilVol.toFixed(2) : "--";
+    document.getElementById('phev_eleVol').value = eleVol ? eleVol.toFixed(2) : "--";
+    if((!oilVol && !eleVol) || (!oilKm && !eleKm)){
+        document.getElementById('phev_oilCostPerKm').innerText="--";
+        document.getElementById('phev_eleCostPerKm').innerText="--";
+        document.getElementById('phev_oilPerKm').innerText="--";
+        document.getElementById('phev_elePerKm').innerText="--";
+        document.getElementById('phev_oil100').innerText="--";
+        document.getElementById('phev_ele100').innerText="--";
+        return null;
+    }
+    let oilCostPerKm = oilKm ? oilMoney / oilKm : 0;
+    let eleCostPerKm = eleKm ? eleMoney / eleKm : 0;
+    let oilPerKm = oilKm ? oilVol / oilKm : 0;
+    let elePerKm = eleKm ? eleVol / eleKm : 0;
+    let oil100 = oilPerKm * 100;
+    let ele100 = elePerKm * 100;
+    document.getElementById('phev_oilCostPerKm').innerText = oilCostPerKm.toFixed(2);
+    document.getElementById('phev_eleCostPerKm').innerText = eleCostPerKm.toFixed(2);
+    document.getElementById('phev_oilPerKm').innerText = oilPerKm.toFixed(4);
+    document.getElementById('phev_elePerKm').innerText = elePerKm.toFixed(4);
+    document.getElementById('phev_oil100').innerText = oil100.toFixed(2);
+    document.getElementById('phev_ele100').innerText = ele100.toFixed(2);
+    saveBtn.classList.add('flash-active');
+    return {oilMoney,oilPrice,oilVol,eleMoney,elePrice,eleVol,oilKm,eleKm,totalKmVal,totalCostVal,oilCostPerKm,eleCostPerKm,oilPerKm,elePerKm,oil100,ele100};
+}
+function phev_clearInput(){
+    document.getElementById('phev_oilMoney').value="";
+    document.getElementById('phev_oilPrice').value="";
+    document.getElementById('phev_oilKm').value="";
+    document.getElementById('phev_eleMoney').value="";
+    document.getElementById('phev_elePrice').value="";
+    document.getElementById('phev_eleKm').value="";
+    document.getElementById('phev_totalKm').value="--";
+    document.getElementById('phev_totalCost').value="--";
+    document.getElementById('phev_oilVol').value="--";
+    document.getElementById('phev_eleVol').value="--";
+    document.getElementById('phev_oilCostPerKm').innerText="--";
+    document.getElementById('phev_eleCostPerKm').innerText="--";
+    document.getElementById('phev_oilPerKm').innerText="--";
+    document.getElementById('phev_elePerKm').innerText="--";
+    document.getElementById('phev_oil100').innerText="--";
+    document.getElementById('phev_ele100').innerText="--";
+}
+function phev_buildRow(listItem,listIndex){
+    let d=listItem.data;
+    let t=listItem.time.split(' ');
+    let datePart=t[0]||"";
+    let timePart=t[1]||"";
+    return `<tr>
+        <td><div class="badge-car newenergy">${listItem.carNo}</div></td>
+        <td>${datePart}<br>${timePart}</td>
+        <td>${(d.totalCostVal||0).toFixed(2)}</td>
+        <td>${(d.totalKmVal||0).toFixed(1)}</td>
+        <td>${(d.oilMoney||0).toFixed(2)}</td>
+        <td>${(d.oilPrice||0).toFixed(2)}</td>
+        <td>${(d.oilKm||0).toFixed(1)}</td>
+        <td>${(d.oilVol||0).toFixed(2)}</td>
+        <td>${(d.eleMoney||0).toFixed(2)}</td>
+        <td>${(d.elePrice||0).toFixed(2)}</td>
+        <td>${(d.eleKm||0).toFixed(1)}</td>
+        <td>${(d.eleVol||0).toFixed(2)}</td>
+        <td>${(d.oilCostPerKm||0).toFixed(2)}</td>
+        <td>${(d.eleCostPerKm||0).toFixed(2)}</td>
+        <td>${(d.oilPerKm||0).toFixed(4)}</td>
+        <td>${(d.elePerKm||0).toFixed(4)}</td>
+        <td>${(d.oil100||0).toFixed(2)}</td>
+        <td>${(d.ele100||0).toFixed(2)}</td>
+        <td><button class="del-btn" onclick="del(${listIndex})">删除</button></td>
+    </tr>`;
+}
+function phev_fillSelect(){
+    carSelectDom.innerHTML="";
+    let addOpt=document.createElement('option');
+    addOpt.value="__ADD__";
+    addOpt.innerText="+ 新增车辆";
+    carSelectDom.appendChild(addOpt);
+    let cars=base_getCarList();
+    let filterCars = cars.filter(item=>item.type === "phev");
+    filterCars.forEach(car=>{
+        let opt=document.createElement('option');
+        opt.value=car.name;
+        opt.innerText=car.name;
+        carSelectDom.appendChild(opt);
+    });
+    if(filterCars.some(x=>x.name === phev_lastSelectCar)){
+        carSelectDom.value = phev_lastSelectCar;
+    }else{
+        if(filterCars.length>0){
+            carSelectDom.value = filterCars[0].name;
+            phev_lastSelectCar = filterCars[0].name;
+        }else{
+            carSelectDom.value = "__ADD__";
+            phev_lastSelectCar = "";
+        }
+    }
+}
+function phev_renderTableAndStat(){
+    let list=base_getRecords();
+    let selectedCar=carSelectDom.value;
+    let phevTbody=document.getElementById('phevTableBody');
+    phevTbody.innerHTML="";
+    if(selectedCar==="__ADD__"){
+        document.getElementById("totalBarText").innerHTML = "汇总统计｜请选择车辆";
+        return;
+    }
+    let filterList=list.filter(i=>i.carNo===selectedCar && i.mode === "phev");
+    let sumOilKm=0,sumEleKm=0,sumOil=0,sumEle=0,sumOilMoney=0,sumEleMoney=0;
+    filterList.forEach((v)=>{
+        let d = v.data;
+        sumOilKm += Number(d.oilKm);
+        sumEleKm += Number(d.eleKm);
+        sumOil += Number(d.oilVol);
+        sumEle += Number(d.eleVol);
+        sumOilMoney += Number(d.oilMoney);
+        sumEleMoney += Number(d.eleMoney);
+        phevTbody.innerHTML += phev_buildRow(v,list.indexOf(v));
+    });
+    let avgOil100 = sumOilKm>0 ? (sumOil/sumOilKm*100).toFixed(2):0;
+    let avgEle100 = sumEleKm>0 ? (sumEle/sumEleKm*100).toFixed(2):0;
+    let avgOilCostPerKm=sumOilKm>0?(sumOilMoney/sumOilKm).toFixed(2):"0.00";
+    let avgEleCostPerKm=sumEleKm>0?(sumEleMoney/sumEleKm).toFixed(2):"0.00";
+    let avgOilPerKm=sumOilKm>0?(sumOil/sumOilKm).toFixed(4):"0.0000";
+    let avgElePerKm=sumEleKm>0?(sumEle/sumEleKm).toFixed(4):"0.0000";
+    document.getElementById("totalBarText").innerHTML = `汇总统计：油里程：${sumOilKm.toFixed(1)} km｜电里程：${sumEleKm.toFixed(1)} km｜总油量：${sumOil.toFixed(2)}L｜总电量：${sumEle.toFixed(2)}度<br>总油费：${sumOilMoney.toFixed(2)}元｜总电费：${sumEleMoney.toFixed(2)}元｜元/公里(油)：${avgOilCostPerKm}｜元/公里(电)：${avgEleCostPerKm}｜升/公里：${avgOilPerKm}｜度/公里：${avgElePerKm}｜平均百公里油耗：${avgOil100}L｜平均百公里电耗：${avgEle100}度`;
+}
+function phev_doAddCar(newCar){
+    let cars=base_getCarList();
+    const exist = cars.find(x=>x.name===newCar && x.type==="phev");
+    if(exist){
+        alert("插混类型下此车辆已经存在");
+        phev_lastSelectCar = newCar;
+        phev_fillSelect();
+        phev_renderTableAndStat();
+        return;
+    }
+    cars.push({name:newCar, type:"phev"});
+    base_saveCarList(cars);
+    phev_lastSelectCar = newCar;
+    phev_fillSelect();
+    phev_renderTableAndStat();
+}
+function phev_saveRecord(){
+    let carNo=carSelectDom.value;
+    if(carNo==="__ADD__"){alert("请先下拉选择车辆，+新增车辆用来添加新车");return;}
+    let res = phev_calc();
+    if(!res){alert("请填写插混对应数据");return;}
+    let item={carNo:carNo,mode:"phev",time:new Date().toLocaleString(),data:res};
+    let list=base_getRecords();
+    list.unshift(item);
+    base_saveRecords(list);
+    phev_lastSelectCar = carNo;
+    phev_clearInput();
+    phev_renderTableAndStat();
+    saveBtn.classList.remove('flash-active');
+}
+function phev_clearCarRecords(){
+    let sel=carSelectDom.value;
+    if(sel==="__ADD__")return;
+    if(!confirm(`确定清空【${sel}】插混所有记录？不可恢复！`))return;
+    let list=base_getRecords().filter(i=>!(i.carNo===sel && i.mode==="phev"));
+    base_saveRecords(list);
+    phev_renderTableAndStat();
+}
+function phev_deleteCar(){
+    let sel=carSelectDom.value;
+    if(sel==="__ADD__")return;
+    if(!confirm(`确定删除插混【${sel}】以及全部记录？`))return;
+    let cars=base_getCarList().filter(c=>!(c.name===sel && c.type==="phev"));
+    base_saveCarList(cars);
+    let rec=base_getRecords().filter(r=>!(r.carNo===sel && r.mode==="phev"));
+    base_saveRecords(rec);
+    phev_lastSelectCar = "";
+    phev_fillSelect();
+    phev_renderTableAndStat();
+}
+function switchToFuel(){
+    currentActiveMode = "fuel";
+    saveBtn.classList.remove('flash-active');
+    document.getElementById('fuelWrap').classList.add('hide');
+    document.getElementById('evWrap').classList.add('hide');
+    document.getElementById('phevWrap').classList.add('hide');
+    document.getElementById('fuelTableWrap').classList.add('hide');
+    document.getElementById('evTableWrap').classList.add('hide');
+    document.getElementById('phevTableWrap').classList.add('hide');
+    document.getElementById('fuelWrap').classList.remove('hide');
+    document.getElementById('fuelTableWrap').classList.remove('hide');
+    fuel_fillSelect();
+    fuel_renderTableAndStat();
+}
+function switchToEv(){
+    currentActiveMode = "ev";
+    saveBtn.classList.remove('flash-active');
+    document.getElementById('fuelWrap').classList.add('hide');
+    document.getElementById('evWrap').classList.add('hide');
+    document.getElementById('phevWrap').classList.add('hide');
+    document.getElementById('fuelTableWrap').classList.add('hide');
+    document.getElementById('evTableWrap').classList.add('hide');
+    document.getElementById('phevTableWrap').classList.add('hide');
+    document.getElementById('evWrap').classList.remove('hide');
+    document.getElementById('evTableWrap').classList.remove('hide');
+    ev_fillSelect();
+    ev_renderTableAndStat();
+}
+function switchToPhev(){
+    currentActiveMode = "phev";
+    saveBtn.classList.remove('flash-active');
+    document.getElementById('fuelWrap').classList.add('hide');
+    document.getElementById('evWrap').classList.add('hide');
+    document.getElementById('phevWrap').classList.add('hide');
+    document.getElementById('fuelTableWrap').classList.add('hide');
+    document.getElementById('evTableWrap').classList.add('hide');
+    document.getElementById('phevTableWrap').classList.add('hide');
+    document.getElementById('phevWrap').classList.remove('hide');
+    document.getElementById('phevTableWrap').classList.remove('hide');
+    phev_fillSelect();
+    phev_renderTableAndStat();
+}
+function saveRecord(){
+    if(currentActiveMode === "fuel") fuel_saveRecord();
+    else if(currentActiveMode === "ev") ev_saveRecord();
+    else if(currentActiveMode === "phev") phev_saveRecord();
+}
+function clearCurrentCar(){
+    if(currentActiveMode === "fuel") fuel_clearCarRecords();
+    else if(currentActiveMode === "ev") ev_clearCarRecords();
+    else if(currentActiveMode === "phev") phev_clearCarRecords();
+}
+function deleteCar(){
+    if(currentActiveMode === "fuel") fuel_deleteCar();
+    else if(currentActiveMode === "ev") ev_deleteCar();
+    else if(currentActiveMode === "phev") phev_deleteCar();
+}
+function del(idx){
+    let list=base_getRecords();
+    list.splice(idx,1);
+    base_saveRecords(list);
+    if(currentActiveMode === "fuel") fuel_renderTableAndStat();
+    if(currentActiveMode === "ev") ev_renderTableAndStat();
+    if(currentActiveMode === "phev") phev_renderTableAndStat();
+}
+function exportExcel(){
+    let list=base_getRecords();
+    let sel=carSelectDom.value;
+    if(sel==="__ADD__")return;
+    let f=list.filter(i=>i.carNo===sel && i.mode===currentActiveMode);
+    let csv="车牌,类型,记录日期,金额,单价,里程,耗量,每公里成本,每单位/公里,百公里耗量\n";
+    f.forEach(v=>{
+        let d = v.data;
+        csv+=`${v.carNo},${v.mode},${v.time},${d.money||d.oilMoney},${d.price||d.oilPrice},${d.km||d.oilKm},${d.total||d.oilVol},${d.costPerKm||d.oilCostPerKm},${d.perKm||d.oilPerKm},${d.per100km||d.oil100}\n`;
+    });
+    base_downloadFile(csv,`${sel}_${currentActiveMode}_记录.csv`,"text/csv");
+}
+function exportTxt(){
+    let list=base_getRecords();
+    let sel=carSelectDom.value;
+    if(sel==="__ADD__") return;
+    let f=list.filter(i=>i.carNo===sel && i.mode===currentActiveMode);
+    let now=new Date();
+    let yyyy=now.getFullYear();
+    let mm=String(now.getMonth()+1).padStart(2,'0');
+    let dd=String(now.getDate()).padStart(2,'0');
+    let hh=String(now.getHours()).padStart(2,'0');
+    let mi=String(now.getMinutes()).padStart(2,'0');
+    let ss=String(now.getSeconds()).padStart(2,'0');
+    let fileName = `${sel}_${currentActiveMode}_记录.txt`;
+    let exportTime=`${yyyy}/${mm}/${dd} ${hh}:${mi}:${ss}`;
+    let count=f.length;
+    let sumKm=0,sumOil=0,sumEle=0,sumOilMoney=0,sumEleMoney=0;
+    let sumOilKm=0,sumEleKm=0;
+    f.forEach(r=>{
+        let d=r.data;
+        if(r.mode=="fuel"){sumKm+=Number(d.km);sumOil+=Number(d.total);sumOilMoney+=Number(d.money);}
+        else if(r.mode=="ev"){sumKm+=Number(d.km);sumEle+=Number(d.total);sumEleMoney+=Number(d.money);}
+        else if(r.mode=="phev"){sumOilKm+=Number(d.oilKm);sumEleKm+=Number(d.eleKm);sumOil+=Number(d.oilVol);sumEle+=Number(d.eleVol);sumOilMoney+=Number(d.oilMoney);sumEleMoney+=Number(d.eleMoney);}
+    });
+    let txt="能耗记录汇总\n";
+    txt += `车牌：${sel}\n`;
+    let modeName;
+    if(currentActiveMode==="fuel") modeName="燃油车";
+    else if(currentActiveMode==="ev") modeName="新能源电车";
+    else modeName="新能源插混增程车";
+    txt += `车辆类型：${modeName}\n`;
+    txt += `导出时间：${exportTime}\n`;
+    txt += `记录条数：${count} 条\n`;
+    txt += "----------------------------------------\n";
+    f.forEach(item=>{
+        let titleName;
+        if(item.mode === "fuel") titleName="【燃油车记录】";
+        else if(item.mode==="ev") titleName="【新能源电车记录】";
+        else titleName="【新能源插混增程车记录】";
+        let d = item.data;
+        txt += titleName+"\n";
+        txt += `日期：${item.time}\n`;
+        if(item.mode==="phev"){
+            txt += `加油金额：${d.oilMoney}元，油价：${d.oilPrice}元/L，油量：${d.oilVol}L，油里程：${d.oilKm}km\n`;
+            txt += `充电金额：${d.eleMoney}元，电价：${d.elePrice}元/度，电量：${d.eleVol}度，电里程：${d.eleKm}km\n`;
+            txt += `油电总里程：${d.totalKmVal}km，总花费：${d.totalCostVal}元\n`;
+            txt += `每公里油费：${d.oilCostPerKm.toFixed(2)}元\n`;
+            txt += `每公里电费：${d.eleCostPerKm.toFixed(2)}元\n`;
+            txt += `升/公里：${d.oilPerKm.toFixed(4)} L/km\n`;
+            txt += `度/公里：${d.elePerKm.toFixed(4)} 度/km\n`;
+            txt += `百公里油耗：${d.oil100.toFixed(2)} L/100km\n`;
+            txt += `百公里电耗：${d.ele100.toFixed(2)} 度/km\n`;
+        }else{
+            txt += `金额：${d.money} 元\n单价：${d.price}\n里程：${d.km}km\n耗量：${d.total}\n每公里成本：${d.costPerKm}元\n每公里耗量：${d.perKm}\n百公里耗量：${d.per100km}\n`;
+        }
+        txt += "----------------------------------------\n";
+    });
+    txt += "\n汇总统计\n";
+    if(currentActiveMode === "phev"){
+        txt += `油行驶总里程：${sumOilKm.toFixed(1)} km\n电行驶总里程：${sumEleKm.toFixed(1)} km\n`;
+    }else{
+        txt += `总行驶里程：${sumKm.toFixed(1)} km\n`;
+    }
+    txt += `总加油量：${sumOil.toFixed(2)} L，总充电量：${sumEle.toFixed(2)} 度\n`;
+    txt += `总油费：${sumOilMoney.toFixed(2)}元，总电费：${sumEleMoney.toFixed(2)}元\n`;
+    txt += "\n";
+    base_downloadFile(txt, fileName,"text/plain");
+}
+function exportJson(){
+    let data={cars:base_getCarList(),records:base_getRecords()};
+    let now=new Date();
+    let y=now.getFullYear();
+    let m=String(now.getMonth()+1).padStart(2,'0');
+    let d=String(now.getDate()).padStart(2,'0');
+    let h=String(now.getHours()).padStart(2,'0');
+    let mi=String(now.getMinutes()).padStart(2,'0');
+    let ss=String(now.getSeconds()).padStart(2,'0');
+    let timeStr=`${y}-${m}-${d}_${h}-${mi}-${ss}`;
+    let json=JSON.stringify(data,null,2);
+    base_downloadFile(json,`全部备份_${timeStr}.json`,"application/json");
+}
+function importJson(){
+    let input=document.createElement('input');
+    input.type='file';
+    input.accept='.json';
+    input.onchange=e=>{
+        let f=e.target.files[0];
+        let reader=new FileReader();
+        reader.onload=evt=>{
+            try{
+                let d=JSON.parse(evt.target.result);
+                if(d.cars&&d.records){
+                    base_saveCarList(d.cars);
+                    base_saveRecords(d.records);
+                }else{
+                    alert("备份格式不兼容");
+                    return;
+                }
+                if(currentActiveMode==="fuel") fuel_renderTableAndStat();
+                if(currentActiveMode==="ev") ev_renderTableAndStat();
+                if(currentActiveMode==="phev") phev_renderTableAndStat();
+                alert("导入成功！");
+            }catch(err){
+                alert("文件解析失败，请选择正确的json备份文件");
+            }
+        };
+        reader.readAsText(f);
+    };
+    input.click();
+}
+carSelectDom.onchange = handleCarSelectChange;
+switchToFuel();
+</script>
+</body>
+</html>
